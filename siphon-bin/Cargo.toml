@@ -37,7 +37,7 @@ full = ["smpp", "http"]    # convenience aggregate: every extension module
 # on `branch = "main"` here too; the committed Cargo.lock pins the exact SHA for
 # reproducible builds (advance with `cargo update`). Extension crates themselves
 # are pinned to their released tags for stable, intentional bumps.
-siphon-sip = { git = "https://github.com/siphon-project/siphon-sip", branch = "main" }
+siphon-sip = { path = ".." }
 siphon-smpp = { git = "https://github.com/siphon-project/siphon-smpp", tag = "v1.3.0", optional = true }
 siphon-http = { git = "https://github.com/siphon-project/siphon-http", tag = "v1.0.1", optional = true }
 
@@ -50,3 +50,9 @@ tracing = "0.1"
 # Standalone workspace so this package is never swept into the siphon-sip
 # package and its dependency graph stays independent.
 [workspace]
+
+# Extension crates depend on the upstream Git source. Replace that source with
+# the repository cloned by the Docker build so siphon-bin actually includes
+# local/fork changes and all crates share one siphon-sip type identity.
+[patch."https://github.com/siphon-project/siphon-sip"]
+siphon-sip = { path = ".." }
