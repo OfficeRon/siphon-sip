@@ -2745,6 +2745,11 @@ fn handle_request(
                         if let Some((_, notify)) = state.uas_2xx_retransmits.remove(&internal_id) {
                             notify.notify_one();
                         }
+                        info!(
+                            call_id = %cid,
+                            internal_call_id = %internal_id,
+                            "B2BUA: received A-leg ACK for 2xx"
+                        );
                         // Take the pending ACK and mark both legs as ACKed.
                         // Grab the winning B-leg's anchored egress socket in the
                         // same pass — the ACK has to leave from where its INVITE
@@ -16332,6 +16337,24 @@ fn b2bua_send_uas_response(
 
     let mut response =
         build_response(invite, code, reason, state.server_header.as_deref(), &reply_headers);
+    // `call.answer()` is a UAS dialog response, so Contact is mandatory on 2xx
+    // (RFC 3261 §13.3.1.4). The normal bridged B2BUA path adds this in
+    // `sanitize_b2bua_response`; the imperative path must do the same or the
+    // caller has no remote target for ACK/BYE and may never start media.
+    if final_response {
+        let contact_host = state.a_leg_advertised_host(local_addr, &transport);
+        let contact_port = a_leg_advertised_port(local_addr, state.via_port(&transport));
+        response.headers.set(
+            "Contact",
+            format!(
+                "<sip:{}:{};transport={}>",
+                contact_host,
+                contact_port,
+                transport.to_string().to_lowercase(),
+            ),
+        );
+        advertise_supported_methods(&mut response.headers);
+    }
     if let Some(body_bytes) = body {
         if let Some(ct) = content_type {
             response.headers.set("Content-Type", ct.to_string());
@@ -16339,9 +16362,23 @@ fn b2bua_send_uas_response(
         response.headers.set("Content-Length", body_bytes.len().to_string());
         response.body = body_bytes;
     }
+    let retransmit_2xx = final_response.then(|| response.clone());
     send_message_from(response, transport, remote_addr, connection_id, local_addr, state);
 
     if final_response {
+        // The B2BUA owns 2xx retransmission (there is no INVITE server
+        // transaction doing it for this path). Stop when the A-leg ACK arrives.
+        if let Some(response) = retransmit_2xx {
+            arm_b2bua_2xx_retransmit(
+                internal_call_id,
+                response,
+                transport,
+                remote_addr,
+                connection_id,
+                local_addr,
+                state,
+            );
+        }
         // Confirm the A-leg dialog and mark the CDR answered (tracked at INVITE
         // by cdr_track_b2bua_start) so a later BYE/terminate CDR shows duration.
         state.call_actors.set_state(internal_call_id, CallState::Answered);
