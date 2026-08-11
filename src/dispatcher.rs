@@ -16402,6 +16402,17 @@ pub fn b2bua_answer_call(
     b2bua_send_uas_response(internal_call_id, invite, code, reason, body, content_type, true)
 }
 
+/// A-leg dialog local tag (UAS To-tag on 18x/2xx). Used by scripts that drive
+/// raw rtpengine NG and must keep `to-tag` aligned with the SIP dialog.
+pub fn b2bua_a_leg_local_tag(internal_call_id: &str) -> Option<String> {
+    let control = B2BUA_CONTROL.get()?;
+    control
+        .state
+        .call_actors
+        .get_call(internal_call_id)
+        .map(|call| call.a_leg.dialog.local_tag.clone())
+}
+
 /// Imperatively send a provisional (1xx) for a UAS-mode B2BUA call
 /// (`call.progress()`) — e.g. a 183 with early-media SDP. Does not answer the
 /// call. Returns `false` if the call is gone / dispatcher down.

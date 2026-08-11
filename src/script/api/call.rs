@@ -817,6 +817,14 @@ impl PyCall {
         &self.id
     }
 
+    /// A-leg UAS dialog local tag (the To-tag stamped on `progress`/`answer`).
+    /// Scripts that use raw rtpengine NG must pass this as `to-tag` so media
+    /// session keys match the SIP dialog.
+    #[getter]
+    fn local_tag(&self) -> Option<String> {
+        crate::dispatcher::b2bua_a_leg_local_tag(&self.id)
+    }
+
     /// Reserve prepaid credit (Ro CCR-INITIAL) for this call BEFORE dialing the
     /// B-leg — the reserve-before-connect gate. Call it from `@b2bua.on_invite`
     /// and branch on the result:
