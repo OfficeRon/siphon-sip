@@ -2,7 +2,8 @@
 //! immediately rather than via a deferred [`CallAction`](super::call::CallAction).
 //!
 //! Injected as `siphon.b2bua._control` at startup; the pure-Python
-//! `_B2buaNamespace` forwards `b2bua.terminate(...)` to it. Stateless — it
+//! `_B2buaNamespace` forwards `b2bua.terminate(...)` / `bye_leg` /
+//! `reinvite_leg` to it. Stateless — it
 //! reaches the running dispatcher through a process-global handle, so it works
 //! from any context (event callbacks like `@rtpengine.on_dtmf`, timers, async
 //! handlers) where the deferred `call.terminate()` is a silent no-op.
@@ -67,5 +68,20 @@ impl PyB2buaControl {
             replaces,
         };
         Ok(crate::dispatcher::b2bua_refer_call(call_id, refer_to))
+    }
+
+    /// BYE one B2BUA leg without tearing down the other.
+    ///
+    /// `on_a_leg=False` hangs up OpenAI (B-leg) and leaves Cellact up so an
+    /// IVR transfer can re-INVITE the A-leg onto new media.
+    #[pyo3(signature = (call_id, on_a_leg))]
+    fn bye_leg(&self, call_id: &str, on_a_leg: bool) -> bool {
+        crate::dispatcher::b2bua_bye_leg(call_id, on_a_leg)
+    }
+
+    /// In-dialog re-INVITE one B2BUA leg with new SDP (same connection).
+    #[pyo3(signature = (call_id, on_a_leg, sdp))]
+    fn reinvite_leg(&self, call_id: &str, on_a_leg: bool, sdp: &str) -> bool {
+        crate::dispatcher::b2bua_reinvite_leg(call_id, on_a_leg, sdp.as_bytes())
     }
 }

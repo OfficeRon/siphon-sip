@@ -223,6 +223,24 @@ class _B2buaNamespace:
             return False
         return control.refer(call_id, target, replaces)
 
+    def bye_leg(self, call_id, on_a_leg):
+        """BYE one B2BUA leg; leave the other up.
+
+        ``on_a_leg=False`` hangs up OpenAI (B-leg) so an IVR transfer can keep
+        Cellact and later re-INVITE the A-leg onto new media.
+        """
+        control = object.__getattribute__(self, "__dict__").get("_control")
+        if control is None:
+            return False
+        return control.bye_leg(call_id, on_a_leg)
+
+    def reinvite_leg(self, call_id, on_a_leg, sdp):
+        """In-dialog re-INVITE one B2BUA leg with new SDP (same connection)."""
+        control = object.__getattribute__(self, "__dict__").get("_control")
+        if control is None:
+            return False
+        return control.reinvite_leg(call_id, on_a_leg, sdp)
+
     @staticmethod
     def on_invite(fn):
         """Register handler for new INVITE (new call)."""

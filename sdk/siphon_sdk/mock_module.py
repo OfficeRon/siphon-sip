@@ -681,6 +681,25 @@ class MockB2bua:
         )
         return True
 
+    def bye_leg(self, call_id: str, on_a_leg: bool) -> bool:
+        """BYE one B2BUA leg without tearing down the other (mock: always True)."""
+        self.refers.append(
+            {"call_id": call_id, "bye_leg": True, "on_a_leg": on_a_leg}
+        )
+        return True
+
+    def reinvite_leg(self, call_id: str, on_a_leg: bool, sdp: str) -> bool:
+        """Re-INVITE one B2BUA leg with SDP (mock: always True)."""
+        self.refers.append(
+            {
+                "call_id": call_id,
+                "reinvite_leg": True,
+                "on_a_leg": on_a_leg,
+                "sdp_bytes": len(sdp or ""),
+            }
+        )
+        return True
+
     @staticmethod
     def on_invite(fn: Callable) -> Callable:
         """Register handler for new INVITE (new call).

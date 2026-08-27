@@ -16276,6 +16276,68 @@ pub fn b2bua_refer_call(
     b2bua_send_outbound_refer(&control.state, &internal_call_id, /*on_a_leg=*/ true, &refer_to)
 }
 
+/// BYE a single B2BUA leg on its existing flow (TLS connection / CSeq / tags).
+/// Does not BYE the other leg and does not tear the call actor down.
+pub fn b2bua_bye_leg(sip_call_id: &str, on_a_leg: bool) -> bool {
+    let Some(control) = B2BUA_CONTROL.get() else {
+        return false;
+    };
+    let Some(internal_call_id) = control.state.call_actors.find_by_sip_call_id(sip_call_id) else {
+        return false;
+    };
+    let _enter = control.runtime.enter();
+    let state = &control.state;
+    let Some(cseq) = state
+        .call_actors
+        .reserve_leg_cseq(&internal_call_id, on_a_leg)
+    else {
+        warn!(call_id = %internal_call_id, "b2bua.bye_leg: no such call/leg");
+        return false;
+    };
+    let Some(leg) = state.call_actors.clone_leg(&internal_call_id, on_a_leg) else {
+        warn!(call_id = %internal_call_id, "b2bua.bye_leg: leg vanished");
+        return false;
+    };
+    let Some(bye) =
+        build_b2bua_in_dialog_request(&leg, state, Method::Bye, cseq, &[], None)
+    else {
+        return false;
+    };
+    let (destination, transport) = resolve_in_dialog_destination(
+        &leg.dialog.route_set,
+        state,
+        leg.transport.remote_addr,
+        leg.transport.transport,
+    );
+    send_message_from(
+        bye,
+        transport,
+        destination,
+        leg.transport.connection_id,
+        leg.transport.local_addr,
+        state,
+    );
+    info!(
+        call_id = %internal_call_id,
+        on_a_leg,
+        "B2BUA: siphon-originated BYE on one leg"
+    );
+    true
+}
+
+/// Re-INVITE a single B2BUA leg with new SDP (A-leg = PSTN after IVR transfer).
+pub fn b2bua_reinvite_leg(sip_call_id: &str, on_a_leg: bool, sdp: &[u8]) -> bool {
+    let Some(control) = B2BUA_CONTROL.get() else {
+        return false;
+    };
+    let Some(internal_call_id) = control.state.call_actors.find_by_sip_call_id(sip_call_id) else {
+        return false;
+    };
+    let _enter = control.runtime.enter();
+    b2bua_send_media_reinvite(&internal_call_id, on_a_leg, sdp.to_vec(), &control.state);
+    true
+}
+
 /// Build and send a UAS response (final 2xx or provisional 1xx) for a B2BUA call
 /// from an imperative `call.answer()` / `call.progress()`.
 ///
