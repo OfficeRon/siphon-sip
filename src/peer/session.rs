@@ -6,9 +6,9 @@ use std::time::{Duration, Instant};
 
 use str0m::change::{SdpAnswer, SdpOffer, SdpPendingOffer};
 use str0m::channel::ChannelId;
-use str0m::media::{Direction, Frequency, MediaKind, MediaTime, Mid};
+use str0m::media::{Direction, Frequency, MediaKind, MediaTime, Mid, Pt};
 use str0m::net::{Protocol, Receive};
-use str0m::rtp::{Pt, RtpWrite, SeqNo};
+use str0m::rtp::{RtpWrite, SeqNo};
 use str0m::{Candidate, Event, IceConnectionState, Input, Output, Rtc};
 
 #[derive(Debug, Clone)]
@@ -184,7 +184,7 @@ impl Peer {
 
     pub fn tx_ssrc_label(&mut self) -> Option<String> {
         let mid = self.audio_mid?;
-        let api = self.rtc.direct_api();
+        let mut api = self.rtc.direct_api();
         let tx = api.stream_tx_by_mid(mid, None)?;
         Some(format!("{:?}", tx.ssrc()))
     }

@@ -315,7 +315,8 @@ async fn run(mut rx: mpsc::UnboundedReceiver<Cmd>, events: std::sync::mpsc::Send
             _ = tokio::time::sleep(Duration::from_millis(5)) => {
                 drive(&mut peers, &mut bridges, &events).await;
                 let now = std::time::Instant::now();
-                waiters.retain(|waiter| {
+                let mut pending = Vec::new();
+                for waiter in waiters.drain(..) {
                     let done = peers.get(&waiter.id).is_some_and(|live| live.peer.connected);
                     if done || now >= waiter.deadline {
                         if let Some(live) = peers.get(&waiter.id) {
@@ -326,11 +327,11 @@ async fn run(mut rx: mpsc::UnboundedReceiver<Cmd>, events: std::sync::mpsc::Send
                                 dtls: live.peer.dtls.clone(),
                             });
                         }
-                        false
                     } else {
-                        true
+                        pending.push(waiter);
                     }
-                });
+                }
+                *waiters = pending;
             }
         }
     }
@@ -378,7 +379,10 @@ async fn handle(
             let _ = reply.send(result);
         }
         Cmd::SetRemote { id, kind, sdp, reply } => {
-            let result = peers.get_mut(&id).ok_or("no peer").and_then(|live| live.peer.set_remote(&kind, &sdp));
+            let result = match peers.get_mut(&id) {
+                Some(live) => live.peer.set_remote(&kind, &sdp),
+                None => Err("no peer".to_string()),
+            };
             let frames = if let Some(live) = peers.get_mut(&id) {
                 flush_one(live, events).await.unwrap_or_default()
             } else {

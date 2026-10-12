@@ -4,7 +4,7 @@
 use std::net::SocketAddr;
 
 use hmac::{Hmac, Mac};
-use md5::{Digest, Md5};
+use md5_turn::{Digest, Md5};
 use sha1::Sha1;
 
 type HmacSha1 = Hmac<Sha1>;
@@ -72,7 +72,7 @@ pub fn binding_request(txid: &[u8; 12]) -> Vec<u8> {
 }
 
 pub fn parse_xor_address(buf: &[u8]) -> Option<SocketAddr> {
-    let value = attr(buf, 0x0020)?;
+    let value = attr_get(buf, 0x0020)?;
     xor_addr(value)
 }
 
@@ -82,12 +82,12 @@ pub struct TurnChallenge {
 }
 
 pub fn is_allocate_unauth(buf: &[u8]) -> bool {
-    stun_type(buf) == Some(ERR_RESP) && attr(buf, 0x0009).is_some_and(|v| v.len() >= 4 && u16::from_be_bytes([v[2], v[3]]) == 401)
+    stun_type(buf) == Some(ERR_RESP) && attr_get(buf, 0x0009).is_some_and(|v| v.len() >= 4 && u16::from_be_bytes([v[2], v[3]]) == 401)
 }
 
 pub fn challenge(buf: &[u8]) -> Option<TurnChallenge> {
-    let realm = attr(buf, 0x0014)?;
-    let nonce = attr(buf, 0x0015)?;
+    let realm = attr_get(buf, 0x0014)?;
+    let nonce = attr_get(buf, 0x0015)?;
     Some(TurnChallenge {
         realm: String::from_utf8_lossy(realm).trim_end_matches('\0').to_string(),
         nonce: String::from_utf8_lossy(nonce).trim_end_matches('\0').to_string(),
@@ -122,8 +122,8 @@ pub fn parse_data_indication(buf: &[u8]) -> Option<(SocketAddr, Vec<u8>)> {
     if stun_type(buf)? != DATA {
         return None;
     }
-    let peer = xor_addr(attr(buf, 0x0012)?)?;
-    let data = attr(buf, 0x0013)?.to_vec();
+    let peer = xor_addr(attr_get(buf, 0x0012)?)?;
+    let data = attr_get(buf, 0x0013)?.to_vec();
     Some((peer, data))
 }
 
@@ -131,7 +131,7 @@ pub fn xor_relayed(buf: &[u8]) -> Option<SocketAddr> {
     if stun_type(buf)? != 0x0103 {
         return None;
     }
-    xor_addr(attr(buf, 0x0016)?)
+    xor_addr(attr_get(buf, 0x0016)?)
 }
 
 fn long_term_key(username: &str, realm: &str, credential: &str) -> Vec<u8> {
@@ -187,7 +187,7 @@ fn stun_type(buf: &[u8]) -> Option<u16> {
     Some(u16::from_be_bytes([buf[0], buf[1]]))
 }
 
-fn attr<'a>(buf: &'a [u8], want: u16) -> Option<&'a [u8]> {
+fn attr_get<'a>(buf: &'a [u8], want: u16) -> Option<&'a [u8]> {
     if buf.len() < 20 {
         return None;
     }

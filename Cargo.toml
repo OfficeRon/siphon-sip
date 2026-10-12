@@ -158,7 +158,7 @@ str0m = { version = "0.24.1", optional = true }
 opus = { version = "0.3", optional = true }
 hmac = { version = "0.12", optional = true }
 sha1 = { version = "0.10", optional = true }
-md-5 = { version = "0.10", optional = true }
+md5_turn = { package = "md-5", version = "0.10", optional = true }
 
 # Lawful Intercept — ETSI ASN.1/BER + XML
 rasn = "0.28"
@@ -270,7 +270,7 @@ ui = ["dep:rust-embed", "dep:mime_guess"]
 # In-process WebRTC peer (`siphon.peer`). Off by default so a plain
 # `cargo build` does not pull str0m or libopus. Enable with `--features webrtc`.
 # When disabled, the Python `peer` stub stays in place and raises.
-webrtc = ["dep:str0m", "dep:opus", "dep:hmac", "dep:sha1", "dep:md-5"]
+webrtc = ["dep:str0m", "dep:opus", "dep:hmac", "dep:sha1", "dep:md5_turn"]
 
 # --- Lint policy ---
 # The codebase is clippy-clean (see `clippy.toml` for the one tuned threshold).
