@@ -331,7 +331,7 @@ async fn run(mut rx: mpsc::UnboundedReceiver<Cmd>, events: std::sync::mpsc::Send
                         pending.push(waiter);
                     }
                 }
-                *waiters = pending;
+                waiters = pending;
             }
         }
     }
