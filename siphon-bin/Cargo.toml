@@ -45,6 +45,7 @@ full = ["smpp", "http", "sigtran"] # convenience aggregate: every extension modu
 # official artifacts pass `--features ui` explicitly.
 ui = ["siphon-sip/ui"] # embedded operator web dashboard, served behind `admin.ui.enabled`
 sctp = ["siphon-sip/sctp"] # SIP + Diameter over SCTP; needs libsctp at build + runtime
+webrtc = ["siphon-sip/webrtc"] # in-process WebRTC peer (`siphon.peer`); needs libopus
 
 [dependencies]
 # Single-source rule: every crate here that depends on siphon-sip MUST use a

@@ -11140,6 +11140,15 @@ pub fn inject_python_singletons(config: &Config) {
     });
 
     // RTPEngine Python singleton is now initialized in init_rtpengine() above.
+
+    // The WebRTC peer does not depend on SIP config. Start it with the process
+    // so a script can `from siphon import peer` on the first call.
+    #[cfg(feature = "webrtc")]
+    Python::attach(|python| {
+        if let Err(error) = crate::script::api::set_peer_singleton(python) {
+            error!("failed to store peer singleton: {error}");
+        }
+    });
 }
 
 // ---------------------------------------------------------------------------

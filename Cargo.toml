@@ -151,6 +151,14 @@ tower-http = { version = "0.7.0", features = ["cors"] }
 # consumer embedding siphon as a lib) pulls neither.
 rust-embed = { version = "8", optional = true }
 mime_guess = { version = "2", optional = true }
+# WebRTC peer. Off by default (see the `webrtc` feature). str0m is sans-IO:
+# one Rtc is one ICE agent and one DTLS association, which is what a bundled
+# renegotiation needs. Opus is the system libopus.
+str0m = { version = "0.24.1", optional = true }
+opus = { version = "0.3", optional = true }
+hmac = { version = "0.12", optional = true }
+sha1 = { version = "0.10", optional = true }
+md-5 = { version = "0.10", optional = true }
 
 # Lawful Intercept — ETSI ASN.1/BER + XML
 rasn = "0.28"
@@ -258,6 +266,11 @@ sctp = ["dep:tokio-sctp"]
 # feature is disabled, an `admin.ui.enabled: true` block still parses and is
 # skipped with a loud warning (mirrors the `sctp` contract).
 ui = ["dep:rust-embed", "dep:mime_guess"]
+
+# In-process WebRTC peer (`siphon.peer`). Off by default so a plain
+# `cargo build` does not pull str0m or libopus. Enable with `--features webrtc`.
+# When disabled, the Python `peer` stub stays in place and raises.
+webrtc = ["dep:str0m", "dep:opus", "dep:hmac", "dep:sha1", "dep:md-5"]
 
 # --- Lint policy ---
 # The codebase is clippy-clean (see `clippy.toml` for the one tuned threshold).

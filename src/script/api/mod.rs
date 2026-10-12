@@ -21,6 +21,8 @@ pub mod li;
 pub mod log;
 pub mod metrics;
 pub mod numbers;
+#[cfg(feature = "webrtc")]
+pub mod peer;
 pub mod presence;
 pub mod proxy_utils;
 pub mod qos;
@@ -60,6 +62,7 @@ pub const BUILT_IN_NAMESPACE_NAMES: &[&str] = &[
     "isc",
     "b2bua",
     "rtpengine",
+    "peer",
     "gateway",
     "cdr",
     "registration",
@@ -104,6 +107,10 @@ static RUST_SINGLETONS: OnceLock<SingletonTuple> = OnceLock::new();
 
 /// Optional RTPEngine singleton — set only when `media.rtpengine` is configured.
 static RTPENGINE_SINGLETON: OnceLock<Py<PyAny>> = OnceLock::new();
+
+/// In-process WebRTC peer. Present only when siphon is built with `--features webrtc`.
+#[cfg(feature = "webrtc")]
+static PEER_SINGLETON: OnceLock<Py<PyAny>> = OnceLock::new();
 
 /// Optional gateway singleton — set only when `gateway` is configured.
 static GATEWAY_SINGLETON: OnceLock<Py<PyAny>> = OnceLock::new();
@@ -246,6 +253,17 @@ pub fn set_rtpengine_singleton(
         .map_err(|error| SiphonError::Script(format!("Py::new(rtpengine): {error}")))?
         .into_any();
     let _ = RTPENGINE_SINGLETON.set(rtpengine_py);
+    Ok(())
+}
+
+/// Store the in-process WebRTC peer. One thread, started once.
+#[cfg(feature = "webrtc")]
+pub fn set_peer_singleton(python: Python<'_>) -> Result<()> {
+    let handle = std::sync::Arc::new(crate::peer::Handle::start());
+    let peer_py: Py<PyAny> = Py::new(python, peer::PyPeer::new(handle))
+        .map_err(|error| SiphonError::Script(format!("Py::new(peer): {error}")))?
+        .into_any();
+    let _ = PEER_SINGLETON.set(peer_py);
     Ok(())
 }
 
@@ -735,6 +753,14 @@ pub fn install_siphon_module(python: Python<'_>) -> Result<()> {
         b2bua_ns
             .setattr("_control", b2bua_control_py.bind(python))
             .map_err(|error| SiphonError::Script(format!("setattr b2bua._control: {error}")))?;
+    }
+
+    // Inject the in-process WebRTC peer when this binary was built with it.
+    #[cfg(feature = "webrtc")]
+    if let Some(peer_py) = PEER_SINGLETON.get() {
+        module
+            .setattr("peer", peer_py.bind(python))
+            .map_err(|error| SiphonError::Script(format!("setattr peer: {error}")))?;
     }
 
     // Inject optional RTPEngine singleton (only when media.rtpengine is configured).

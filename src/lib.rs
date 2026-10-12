@@ -26,6 +26,8 @@ pub mod media;
 pub mod metrics;
 pub mod nat;
 pub mod numbers;
+#[cfg(feature = "webrtc")]
+pub mod peer;
 pub mod presence;
 pub mod proxy;
 pub mod registrant;

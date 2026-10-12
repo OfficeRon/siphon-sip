@@ -991,6 +991,61 @@ auth = _AuthNamespace()
 log = _LogNamespace()
 cache = _CacheNamespace()
 rtpengine = _RtpEngineNamespace()
+
+
+class _PeerNamespace:
+    """WebRTC peer. Replaced when siphon is built with --features webrtc."""
+
+    def available(self):
+        return False
+
+    async def create(self, *args, **kwargs):
+        raise NotImplementedError("peer.create() not available — build siphon with --features webrtc")
+
+    async def set_remote(self, *args, **kwargs):
+        raise NotImplementedError("peer.set_remote() not available — build siphon with --features webrtc")
+
+    async def add_ice(self, *args, **kwargs):
+        raise NotImplementedError("peer.add_ice() not available — build siphon with --features webrtc")
+
+    async def create_offer(self, *args, **kwargs):
+        raise NotImplementedError("peer.create_offer() not available — build siphon with --features webrtc")
+
+    async def create_answer(self, *args, **kwargs):
+        raise NotImplementedError("peer.create_answer() not available — build siphon with --features webrtc")
+
+    async def local_ice(self, *args, **kwargs):
+        raise NotImplementedError("peer.local_ice() not available — build siphon with --features webrtc")
+
+    async def wait_connected(self, *args, **kwargs):
+        raise NotImplementedError("peer.wait_connected() not available — build siphon with --features webrtc")
+
+    async def send(self, *args, **kwargs):
+        raise NotImplementedError("peer.send() not available — build siphon with --features webrtc")
+
+    async def rotate(self, *args, **kwargs):
+        raise NotImplementedError("peer.rotate() not available — build siphon with --features webrtc")
+
+    async def dtmf(self, *args, **kwargs):
+        raise NotImplementedError("peer.dtmf() not available — build siphon with --features webrtc")
+
+    async def bridge(self, *args, **kwargs):
+        raise NotImplementedError("peer.bridge() not available — build siphon with --features webrtc")
+
+    async def unbridge(self, *args, **kwargs):
+        raise NotImplementedError("peer.unbridge() not available — build siphon with --features webrtc")
+
+    async def close(self, *args, **kwargs):
+        raise NotImplementedError("peer.close() not available — build siphon with --features webrtc")
+
+    async def abandon(self, *args, **kwargs):
+        raise NotImplementedError("peer.abandon() not available — build siphon with --features webrtc")
+
+    def poll_event(self, timeout_ms=0):
+        return None
+
+
+peer = _PeerNamespace()
 gateway = _GatewayNamespace()
 registration = _RegistrationNamespace()
 li = _LiNamespace()
